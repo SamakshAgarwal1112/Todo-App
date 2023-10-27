@@ -37,6 +37,7 @@ import { MdDelete } from "react-icons/md";
 
 export default function MainComponent() {
   const {
+    user,
     loggedInUser,
     tasks,
     setTasks,
@@ -57,10 +58,13 @@ export default function MainComponent() {
   let taskInputValue = "";
 
   useEffect(() => {
-    if (loggedInUser === null) {
+    if(user === null){
+      navigate("/register");
+    }
+    else if (loggedInUser === null) {
       navigate("/login");
     }
-    if (loggedInUser !== null) handleGetTasks();
+    else if (loggedInUser !== null) handleGetTasks();
   }, [tasksType]);
 
   // Method for error catching in try-catch clause
