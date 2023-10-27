@@ -58,10 +58,7 @@ export default function MainComponent() {
   let taskInputValue = "";
 
   useEffect(() => {
-    if(user === null){
-      navigate("/register");
-    }
-    else if (loggedInUser === null) {
+    if (loggedInUser === null) {
       navigate("/login");
     }
     else if (loggedInUser !== null) handleGetTasks();
