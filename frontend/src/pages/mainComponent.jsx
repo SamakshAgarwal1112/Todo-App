@@ -37,7 +37,6 @@ import { MdDelete } from "react-icons/md";
 
 export default function MainComponent() {
   const {
-    user,
     loggedInUser,
     tasks,
     setTasks,

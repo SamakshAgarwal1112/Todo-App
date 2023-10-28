@@ -76,6 +76,7 @@ function Navbar() {
               Register
             </MenuItem>
             <MenuItem
+              isDisabled={loggedInUser === null}
               onClick={logout}
               fontSize="1.2rem"
               icon={<BiLogOut style={{ width: "20px", height: "20px" }} />}
@@ -100,31 +101,19 @@ function Navbar() {
           Register
         </Button>
 
-        {loggedInUser === null ? (
-          <Button
-            onClick={logout}
-            color="white"
-            bg="gray.500"
-            isDisabled
-            letterSpacing={1}
-            fontSize="1.2rem"
-          >
-            Logout
-          </Button>
-        ) : (
-          <Button
-            onClick={logout}
-            color="white"
-            bg="gray.500"
-            letterSpacing={1}
-            fontSize="1.2rem"
-            _hover={{
-              bg: "gray.600",
-            }}
-          >
-            Logout
-          </Button>
-        )}
+        <Button
+          isDisabled={loggedInUser === null}
+          onClick={logout}
+          color="white"
+          bg="gray.500"
+          letterSpacing={1}
+          fontSize="1.2rem"
+          _hover={{
+            bg: "gray.600",
+          }}
+        >
+          Logout
+        </Button>
       </Flex>
     </Flex>
   );
