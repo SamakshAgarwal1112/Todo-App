@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_URL = "https://todoapp-backend-ycgo.onrender.com";
+// const API_URL = "http://localhost:3001";
 
 export const register = (userData) => {
   return axios.post(
@@ -53,6 +54,15 @@ export const addTask = (taskData, token) => {
   };
   return axios.post(`${API_URL}/api/tasks`, { ...taskData }, config);
 };
+
+export const updateTaskContent = (updatedTask, id, token) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+  return axios.put(`${API_URL}/api/tasks/updatecontent/${id}`, { ...updatedTask }, config);
+}
 
 export const updateTaskStatus = (id, token) => {
   const config = {

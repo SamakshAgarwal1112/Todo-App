@@ -1,39 +1,41 @@
-import React from "react";
-import { useEffect, useRef } from "react";
-import useTaskStore from "../taskStore";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../components/navbar";
 import {
-  addTask,
-  getTasks,
-  getCompletedTasks,
-  getIncompletedTasks,
-  deleteTask,
-  updateTaskStatus,
-} from "../utils/apis";
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Flex,
   Button,
-  Select,
-  useDisclosure,
+  Center,
+  Checkbox,
+  Flex,
   FormControl,
   FormLabel,
   Input,
-  useToast,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
   Spinner,
   Stack,
   Text,
-  Checkbox,
-  Center,
+  Tooltip,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
+import { useEffect, useRef, useState } from "react";
+import { HiPencil } from "react-icons/hi2";
 import { MdDelete } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/navbar";
+import useTaskStore from "../taskStore";
+import {
+  addTask,
+  deleteTask,
+  getCompletedTasks,
+  getIncompletedTasks,
+  getTasks,
+  updateTaskContent,
+  updateTaskStatus,
+} from "../utils/apis";
 
 export default function MainComponent() {
   const {
@@ -45,22 +47,24 @@ export default function MainComponent() {
     tasksType,
     setTasksType,
   } = useTaskStore();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const titleRef = useRef(null);
+  const descriptionRef = useRef(null);
+  const dueDateRef = useRef(null);
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const taskRef = useRef("");
   const tasksTypeRef = useRef(null);
   const toast = useToast();
   const token =
     loggedInUser !== null
       ? JSON.parse(localStorage.getItem("loggedInUser")).token
       : "";
-  let taskInputValue = "";
 
   useEffect(() => {
     if (loggedInUser === null) {
       navigate("/login");
-    }
-    else if (loggedInUser !== null) handleGetTasks();
+    } else if (loggedInUser !== null) handleGetTasks();
   }, [tasksType]);
 
   // Method for error catching in try-catch clause
@@ -78,40 +82,6 @@ export default function MainComponent() {
       isClosable: true,
       position: "top",
     });
-  };
-
-  // handling change in Select while selecting the tasksType
-  const handleSelectChange = (e) => {
-    setTasksType(e.target.value);
-  };
-
-  // handling change in input field while adding tasks
-  const handleInputChange = () => {
-    taskInputValue = taskRef.current.value;
-  };
-
-  // Method for adding tasks
-  const handleAddTask = async () => {
-    setIsLoading(true);
-    try {
-      const todo = taskInputValue;
-      const response = await addTask({ todo }, token);
-      if (response.status === 200) {
-        tasks.push(response.data);
-        setTasks(tasks);
-        toast({
-          title: "Success",
-          description: "Task added successfully!",
-          status: "success",
-          duration: 1000,
-          isClosable: true,
-          position: "top",
-        });
-      }
-    } catch (error) {
-      catchError(error);
-    }
-    setIsLoading(false);
   };
 
   // Method for getting tasks (all, completed or incompleted)
@@ -135,6 +105,50 @@ export default function MainComponent() {
     setIsLoading(false);
   };
 
+  // handling change in Select while selecting the tasksType
+  const handleSelectChange = (e) => {
+    setTasksType(e.target.value);
+  };
+
+  // Method for opening modal for adding tasks
+  const openModalForAdd = () => {
+    setIsUpdating(false);
+    onOpen();
+  };
+
+  // Method for opening modal for updating tasks
+  const openModalForUpdate = (id) => {
+    setIsUpdating(true);
+    setSelectedTaskId(id);
+    onOpen();
+  };
+
+  // Method for adding tasks
+  const handleAddTask = async () => {
+    setIsLoading(true);
+    try {
+      const title = titleRef.current.value;
+      const description = descriptionRef.current.value;
+      const dueDate = dueDateRef.current.value;
+      const response = await addTask({ title, description, dueDate }, token);
+      if (response.status === 200) {
+        tasks.push(response.data);
+        setTasks(tasks);
+        toast({
+          title: "Success",
+          description: "Task added successfully!",
+          status: "success",
+          duration: 1000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+    } catch (error) {
+      catchError(error);
+    }
+    setIsLoading(false);
+  };
+
   // Method for deleting the tasks
   const handleDelete = async (id) => {
     setIsLoading(true);
@@ -146,6 +160,45 @@ export default function MainComponent() {
         toast({
           title: "Success",
           description: "Task deleted successfully!",
+          status: "success",
+          duration: 1000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+    } catch (error) {
+      catchError(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Method for updating task content
+  const handleUpdateTaskContent = async (id) => {
+    setIsLoading(true);
+    try {
+      const title = titleRef.current.value;
+      const description = descriptionRef.current.value;
+      const response = await updateTaskContent(
+        { title, description },
+        id,
+        token
+      );
+      if (response.status === 200) {
+        const updatedTasks = tasks.map((task) => {
+          if (task._id === id) {
+            return {
+              ...task,
+              title: title,
+              description: description,
+            };
+          } else {
+            return task;
+          }
+        });
+        setTasks(updatedTasks);
+        toast({
+          title: "Success",
+          description: "Task updated successfully!",
           status: "success",
           duration: 1000,
           isClosable: true,
@@ -194,8 +247,10 @@ export default function MainComponent() {
     return (
       <Flex
         key={index}
-        align="center"
+        direction={["column", "row"]}
+        alignItems="start"
         justify="space-between"
+        gap={[5, ""]}
         bg="#ffffff"
         w={["20rem", "37rem"]}
         mb="0.8rem"
@@ -203,24 +258,35 @@ export default function MainComponent() {
         py="0.4rem"
         borderRadius="0.4rem"
       >
-        <Flex>
+        <Flex alignItems="start">
           <Checkbox
             size="lg"
             mr="1rem"
+            mt="0.4rem"
             isChecked={task.completed}
             onChange={() => handleCheck(task._id)}
-          ></Checkbox>
-          <Stack maxWidth={["12rem", "28rem"]}>
+          />
+          <Stack maxWidth={["16rem", "26rem"]}>
             <Text
               as={task.completed ? "s" : ""}
               color={task.completed ? "gray.500" : "black"}
+              fontWeight={500}
+              fontSize="1.3rem"
+            >
+              {task.title}
+            </Text>
+            <Text
+              as={task.completed ? "s" : ""}
+              color={task.completed ? "gray.500" : "#585858"}
               fontWeight="500"
               fontSize="1rem"
+              mt={-2}
             >
-              {task.todo}
+              {task.description ? task.description : "No description"}
             </Text>
             <Text color="#585858" fontSize="0.9rem">
-              {new Date(task.createdAt).toLocaleString("en-US", {
+              Due Date -{" "}
+              {new Date(task.dueDate).toLocaleString("en-US", {
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",
@@ -231,9 +297,24 @@ export default function MainComponent() {
             </Text>
           </Stack>
         </Flex>
-        <Button p={0} onClick={() => handleDelete(task._id)}>
-          <MdDelete style={{ width: "25px", height: "25px" }} color="#3d3d3d" />
-        </Button>
+        <Flex gap={2}>
+          <Tooltip label="Update Task">
+            <Button p={0} onClick={() => openModalForUpdate(task._id)}>
+              <HiPencil
+                style={{ width: "25px", height: "25px" }}
+                color="#3d3d3d"
+              />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Delete Task">
+            <Button p={0} onClick={() => handleDelete(task._id)}>
+              <MdDelete
+                style={{ width: "25px", height: "25px" }}
+                color="#3d3d3d"
+              />
+            </Button>
+          </Tooltip>
+        </Flex>
       </Flex>
     );
   });
@@ -256,7 +337,8 @@ export default function MainComponent() {
               mb="1.5rem"
             >
               <Button
-                onClick={onOpen}
+                onClick={openModalForAdd}
+                name="addTask"
                 bg="#4250f5"
                 color="white"
                 fontSize="1.1rem"
@@ -283,10 +365,17 @@ export default function MainComponent() {
             </Flex>
           </Center>
 
-          <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={taskRef} size={["xs", "lg"]}>
+          <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            initialFocusRef={titleRef}
+            size={["xs", "lg"]}
+          >
             <ModalOverlay />
             <ModalContent>
-              <ModalHeader color="#646681">Add New Task</ModalHeader>
+              <ModalHeader color="#646681">
+                {isUpdating ? "Update Task" : "Add Task"}
+              </ModalHeader>
               <ModalCloseButton
                 _hover={{
                   bg: "#eb3f3f",
@@ -294,16 +383,39 @@ export default function MainComponent() {
                 }}
               />
               <ModalBody pb={6}>
+                <FormControl isRequired>
+                  <FormLabel htmlFor="title" color="#646681" mb="0.5rem">
+                    Task Title
+                  </FormLabel>
+                  <Input
+                    placeholder="Buying veggies..."
+                    type="text"
+                    name="title"
+                    mb="1.5rem"
+                    ref={titleRef}
+                  />
+                </FormControl>
                 <FormControl>
-                  <FormLabel htmlFor="todo" color="#646681" mb="1rem">
+                  <FormLabel htmlFor="description" color="#646681" mb="0.5rem">
                     Task Description
                   </FormLabel>
                   <Input
-                    placeholder="What I have to do?"
+                    placeholder="Potatoes, tomatoes, onions..."
                     type="text"
-                    name="todo"
-                    ref={taskRef}
-                    onChange={handleInputChange}
+                    name="description"
+                    mb="1.5rem"
+                    ref={descriptionRef}
+                  />
+                </FormControl>
+                <FormControl display={isUpdating ? "none" : "block"} isRequired>
+                  <FormLabel htmlFor="dueDate" color="#646681" mb="0.5rem">
+                    Task Due Date
+                  </FormLabel>
+                  <Input
+                    placeholder="Potatoes, tomatoes, onions..."
+                    type="datetime-local"
+                    name="dueDate"
+                    ref={dueDateRef}
                   />
                 </FormControl>
               </ModalBody>
@@ -317,8 +429,10 @@ export default function MainComponent() {
                     bg: "#2732b8",
                   }}
                   onClick={() => {
-                    taskInputValue
-                      ? onClose() & handleAddTask()
+                    isUpdating
+                      ? handleUpdateTaskContent(selectedTaskId) & onClose()
+                      : titleRef.current.value
+                      ? handleAddTask() & onClose()
                       : toast({
                           title: "Task Error",
                           description: "Cannot add empty task!",
@@ -329,7 +443,7 @@ export default function MainComponent() {
                         });
                   }}
                 >
-                  Add Task
+                  {isUpdating ? "Update" : "Add"}
                 </Button>
                 <Button
                   onClick={onClose}
