@@ -188,8 +188,8 @@ export default function MainComponent() {
           if (task._id === id) {
             return {
               ...task,
-              title: title,
-              description: description,
+              title: response.data.title,
+              description: response.data.description,
             };
           } else {
             return task;
